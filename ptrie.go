@@ -5,8 +5,6 @@
 // Package ptrie implements a Pruning Radix Trie.
 package ptrie
 
-import "unicode/utf8"
-
 // Item is an element store in a PTrie. If T is immutable, so is the item.
 type Item[T any] struct {
 	Value T
@@ -16,65 +14,10 @@ type Item[T any] struct {
 
 // PTrie is a Pruning Radix Trie.
 type PTrie[T any] struct {
-	parent   *PTrie[T]
-	children []*PTrie[T]
-	depth    int
-	maxRank  uint // highest rank in this subtrie
-	item     Item[T]
-
-	char       byte
-	insideRune bool
-}
-
-// FocusString returns the subtrie of pt with the given prefix.
-func (pt *PTrie[T]) FocusString(prefix string) *PTrie[T] {
-	cur := pt
-	for _, b := range []byte(prefix) {
-		cur = cur.FocusByte(b)
-		if cur == nil {
-			return nil
-		}
-	}
-	return cur
-}
-
-// FocusRune returns the subtrie of pt with c as its prefix.
-func (pt *PTrie[T]) FocusRune(c rune) *PTrie[T] {
-	bs := utf8.AppendRune(nil, c)
-	cur := pt
-	for _, b := range bs {
-		cur = cur.FocusByte(b)
-		if cur == nil {
-			return nil
-		}
-	}
-	return cur
-}
-
-// FocusByte returns the subtrie of pt with c as its prefix.
-func (pt *PTrie[T]) FocusByte(c byte) *PTrie[T] {
-	for _, child := range pt.children {
-		if child.char == c {
-			return child
-		}
-	}
-	return nil
-}
-
-// UnfocusByte returns the parent of pt, the equivalent of removing the last
-// byte in the prefix.
-func (pt *PTrie[T]) UnfocusByte() *PTrie[T] {
-	return pt.parent
-}
-
-// UnfocusRune returns the first ancestor of pt that is a sequence of valid
-// utf-8 characters, the equivalent of removing the last rune in the prefix.
-func (pt *PTrie[T]) UnfocusRune() *PTrie[T] {
-	cur := pt.parent
-	for cur.insideRune {
-		cur = pt.parent
-	}
-	return cur
+	item      Item[T]
+	children  []*PTrie[T]
+	maxRank   uint // highest rank in this subtrie
+	suffixLen int
 }
 
 // FindTopK returns the k items with the highest rank in pt with the prefix
@@ -88,15 +31,47 @@ func (pt *PTrie[T]) FindTopKFast(prefix string, result []Item[T]) []Item[T] {
 	best := result[:0]
 
 	// first, walk pt until we have term sliced off:
-	cur := pt.FocusString(prefix)
-	if cur == nil {
+	lca := pt.lcaScan(prefix)
+	if lca == nil {
 		return nil
 	}
-
-	// then, recursively walk the current subtrie
-	best = cur.walk(best)
+	best = lca.walk(best)
 
 	return best
+}
+
+// lcaScan returns the lowest common ancestor subtrie containing all items with
+// the given prefix.
+func (pt *PTrie[T]) lcaScan(prefix string) *PTrie[T] {
+	for _, child := range pt.children {
+		c, numCommon := child.compare(prefix)
+		switch c {
+		case cmpNoMatch:
+			// check other children
+		case cmpEqual:
+			return child
+		case cmpSubkey:
+			return child
+		case cmpSuperkey:
+			return child.lcaScan(prefix[numCommon:])
+		case cmpSharedPrefix:
+			return nil
+		}
+	}
+	return pt
+}
+
+func (pt *PTrie[T]) hasPrefix(prefix string) bool {
+	if pt.suffixLen < len(prefix) {
+		return false
+	}
+	ptTerm := pt.term()
+	for i := 0; i < len(prefix); i++ {
+		if prefix[i] != ptTerm[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func (pt *PTrie[T]) walk(result Items[T]) []Item[T] {
@@ -148,6 +123,7 @@ func (result Items[T]) shouldInsert(subTrie *PTrie[T]) bool {
 	if len(result) < cap(result) {
 		return true
 	}
+	// or if we're better than the worst result
 	if result.worst().Rank < subTrie.item.Rank {
 		return true
 	}

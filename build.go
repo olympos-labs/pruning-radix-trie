@@ -6,16 +6,15 @@ package ptrie
 
 import (
 	"sort"
-	"unicode/utf8"
 )
 
 // We can build the trie incrementally, but this is simpler. I'll keep it like
-// this unless there are some good reasons for not having it like this.
+// this for now.
 
 // FromItems returns an immutable PTrie from the given items. The item terms
 // must be distinct.
 func FromItems[T any](items []Item[T]) *PTrie[T] {
-	// sort by largest first. That way we should have good cache locality (...
+	// sort by highest first. That way we should have good cache locality (...
 	// statistically anyway) _and_ it simplifies the building algorithm by a lot.
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].Rank > items[j].Rank
@@ -23,7 +22,7 @@ func FromItems[T any](items []Item[T]) *PTrie[T] {
 
 	var root PTrie[T]
 	for _, item := range items {
-		root.insertItem(item)
+		root.insertItem(item.Term, item)
 	}
 
 	return &root
@@ -31,33 +30,99 @@ func FromItems[T any](items []Item[T]) *PTrie[T] {
 
 // insertItem inserts item into pt. The item's rank must be equal or lower
 // than the max rank of pt.
-func (pt *PTrie[T]) insertItem(item Item[T]) {
-	pt.maxRank = item.Rank
-	cur := pt
-	var scratch [utf8.UTFMax]byte
-	for _, r := range item.Term {
-		bs := utf8.AppendRune(scratch[:0], r)
-		for i, b := range bs {
-			isLastByte := i+1 == len(bs)
-			cur = cur.focusByteOrNew(b, isLastByte, item.Rank)
+func (pt *PTrie[T]) insertItem(term string, item Item[T]) {
+	pt.maxRank = max(pt.maxRank, item.Rank)
+	for i, child := range pt.children {
+		c, numCommon := child.compare(term)
+		switch c {
+		case cmpEqual:
+			// can happen if longer words make a node. Put the item in, should be
+			// sufficient.
+			child.item = item
+			return
+		case cmpNoMatch:
+			// move on to next child
+		case cmpSubkey:
+			// item term is smaller, replace child with new node
+			child.suffixLen -= numCommon
+			pt.children[i] = &PTrie[T]{
+				children:  []*PTrie[T]{child},
+				maxRank:   child.maxRank,
+				item:      item,
+				suffixLen: len(term) - numCommon,
+			}
+			return
+		case cmpSuperkey:
+			// item term is larger, recurse
+			child.insertItem(term[numCommon:], item)
+			return
+		case cmpSharedPrefix:
+			// shared prefix, but differing suffixes. Replace child with a parent node
+			// containing them both.
+			child.suffixLen -= numCommon
+			newChild := &PTrie[T]{
+				maxRank:   item.Rank,
+				item:      item,
+				suffixLen: len(term) - numCommon,
+			}
+			pt.children[i] = &PTrie[T]{
+				children: []*PTrie[T]{child, newChild},
+				maxRank:  child.maxRank,
+				item: Item[T]{
+					Term: term[:numCommon],
+				},
+				suffixLen: numCommon,
+			}
+			return
 		}
 	}
 
-	cur.item = item
+	// not part of any existing node, so append new node instead:
+	pt.children = append(pt.children,
+		&PTrie[T]{
+			maxRank:   item.Rank,
+			item:      item,
+			suffixLen: len(term),
+		},
+	)
 }
 
-func (pt *PTrie[T]) focusByteOrNew(c byte, isLastByte bool, curRank uint) *PTrie[T] {
-	cur := pt.FocusByte(c)
-	if cur != nil {
-		return cur
+func (pt *PTrie[T]) compare(term string) (cmp, int) {
+	m := min(len(term), pt.suffixLen)
+	ptTerm := pt.term()
+	numCommon := 0
+	for i := 0; i < m; i++ {
+		if term[i] != ptTerm[i] {
+			break
+		}
+		numCommon++
 	}
-	cur = &PTrie[T]{
-		char:       c,
-		parent:     pt,
-		depth:      pt.depth + 1,
-		insideRune: !isLastByte,
-		maxRank:    curRank,
+	switch {
+	case numCommon == 0:
+		return cmpNoMatch, numCommon
+	case len(term) == pt.suffixLen && numCommon == m:
+		return cmpEqual, numCommon
+	case len(term) < pt.suffixLen && numCommon == m:
+		return cmpSubkey, numCommon
+	case pt.suffixLen < len(term) && numCommon == m:
+		return cmpSuperkey, numCommon
+	case numCommon < m:
+		return cmpSharedPrefix, numCommon
+	default:
+		panic("unhandled case, logic error")
 	}
-	pt.children = append(pt.children, cur)
-	return cur
 }
+
+func (pt *PTrie[T]) term() string {
+	return pt.item.Term[len(pt.item.Term)-pt.suffixLen:]
+}
+
+type cmp int
+
+const (
+	cmpEqual cmp = iota + 1
+	cmpNoMatch
+	cmpSubkey
+	cmpSuperkey
+	cmpSharedPrefix
+)
