@@ -16,7 +16,12 @@ import (
 )
 
 func TestPTrie(t *testing.T) {
-	items := readItems(t, "min-terms.txt.gz")
+	var items []Item[empty]
+	if testing.Short() {
+		items = readItems(t, "min-terms.txt.gz")
+	} else {
+		items = readItems(t, "terms.txt.gz")
+	}
 
 	trie := FromItems(items)
 
@@ -41,18 +46,23 @@ func printFound(t *testing.T, pt *PTrie[empty], prefix string) {
 // goarch: amd64
 // pkg: olympos.io/container/pruning-radix-trie
 // cpu: AMD Ryzen 7 5800X 8-Core Processor
-// BenchmarkMicrosoft/m-16  	 2117851	       567.7 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/mi-16 	 2167874	       560.4 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/mic-16         	 2885617	       415.1 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/micr-16        	 2208138	       538.9 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/micro-16       	 2225856	       539.2 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/micros-16      	 3643194	       334.2 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/microso-16     	 8094313	       147.8 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/microsof-16    	14714454	        82.43 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/microsoft-16   	14215828	        84.88 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/m-16  	 1723411	       700.8 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/mi-16 	 1546321	       763.2 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/mic-16         	 2158534	       553.8 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/micr-16        	 2235819	       579.3 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/micro-16       	 2211950	       542.9 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/micros-16      	 2881760	       414.6 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/microso-16     	 3480234	       340.4 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/microsof-16    	 3700550	       324.2 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/microsoft-16   	 3632427	       334.5 ns/op	       0 B/op	       0 allocs/op
 
 func BenchmarkMicrosoft(b *testing.B) {
-	items := readItems(b, "min-terms.txt.gz")
+	var items []Item[empty]
+	if testing.Short() {
+		items = readItems(b, "min-terms.txt.gz")
+	} else {
+		items = readItems(b, "terms.txt.gz")
+	}
 
 	trie := FromItems(items)
 	for m := 1; m <= len("microsoft"); m++ {

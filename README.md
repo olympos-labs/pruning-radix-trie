@@ -70,19 +70,7 @@ should show microseconds or the post should talk about microseconds. Given the
 presentation, it seems like the benchmark image should talk about microseconds
 and not nanoseconds.
 
-Also, I'm not sure if the benchmark even has 6 million dictionary words in it:
-[There's some code pruning away
-bigrams](https://github.com/wolfgarbe/PruningRadixTrie/blob/e86ca38918f03582d9e4316a1d6613986d4b5f82/PruningRadixTrie/PruningRadixTrie.cs#L242-L249)
-and if I'm doing that with the original term file, I get 1,457,852 dictionary
-words.
-
-Additionally, the "microsoft" lookup result is a little weird. Both
-implementations should scan down to the subtrie with the "microsoft" prefix, and
-there are no children underneath that node in my implementation. Consequently, I
-would expect identical performance for those (.. well, better if we use trie
-properties), not an improvement for the pruning radix trie.
-
-Anyway, I don't think there's much point in comparing this trie with an
+I don't think there's much point in comparing this trie with an
 exhaustive search, which is the best a standard Patricia trie would be able to
 do. Instead, I wanted to highlight the difference between a Patricia/compressed
 trie and an uncompressed one:
@@ -91,18 +79,19 @@ trie and an uncompressed one:
 
 The results aren't that surprising: The compressed trie will have far fewer
 empty nodes, and so scanning a trie for top-ranked items is gonna be cheaper
-when there are fewer nodes to visit. When the walk down the trie is effectively
-all you do, you'd prefer that to be more performant (the logic for that is
-simpler in the uncompressed case).
+when there are fewer nodes to visit. When the walk down the trie becomes more
+and more of the work, you'd prefer that to be efficient. The logic for that is
+simpler in the uncompressed case, and if you end up with very few nodes to
+evaluate after that, the uncompressed case could perform better in benchmarks.
 
-Also, this benchmark looks better than it probably should for the uncompressed
-case, as more or less all the nodes will be in the cache. In a real-world
-scenario, the compressed trie will likely fare better than the uncompressed
-because of cache invalidation etc.
+However, this benchmark looks better than it probably should for the
+uncompressed case, as more or less all the nodes will be in the cache. In a
+real-world scenario, the compressed trie will likely fare better than the
+uncompressed because of cache invalidation etc.
 
 ## License
 
-Copyright © 2023 Jean Niklas L'orange
+Copyright © 2023 Jean Niklas L'orange and contributors
 
 Distributed under the BSD 3-clause license, which is available in the file
 LICENSE.

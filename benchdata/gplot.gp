@@ -8,7 +8,9 @@ set bars 2.0
 
 set boxwidth 0.15
 
-set title 'Lookup time for top 10 ranked results from a \~1.5 million term dictionary'
+set yrange [0:]
+
+set title 'Lookup time for top 10 ranked results from a \~6 million term dictionary'
 set ylabel 'ns/op'
 set xlabel 'prefix length on the word "microsoft"'
 set format y '%.0f'
