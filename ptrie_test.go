@@ -46,15 +46,15 @@ func printFound(t *testing.T, pt *PTrie[empty], prefix string) {
 // goarch: amd64
 // pkg: olympos.io/container/pruning-radix-trie
 // cpu: AMD Ryzen 7 5800X 8-Core Processor
-// BenchmarkMicrosoft/m-16  	 1723411	       700.8 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/mi-16 	 1546321	       763.2 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/mic-16         	 2158534	       553.8 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/micr-16        	 2235819	       579.3 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/micro-16       	 2211950	       542.9 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/micros-16      	 2881760	       414.6 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/microso-16     	 3480234	       340.4 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/microsof-16    	 3700550	       324.2 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkMicrosoft/microsoft-16   	 3632427	       334.5 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/m-16  	 2016354	       602.3 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/mi-16 	 1750233	       670.4 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/mic-16         	 2571133	       477.2 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/micr-16        	 2637111	       457.0 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/micro-16       	 2573302	       458.7 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/micros-16      	 3297351	       360.0 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/microso-16     	 4091931	       293.5 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/microsof-16    	 4289718	       283.3 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkMicrosoft/microsoft-16   	 4238191	       287.2 ns/op	       0 B/op	       0 allocs/op
 
 func BenchmarkMicrosoft(b *testing.B) {
 	var items []Item[empty]

@@ -16,4 +16,5 @@ set xlabel 'prefix length on the word "microsoft"'
 set format y '%.0f'
 
 plot "uncompressed.dat" using 1:2 title 'Uncompressed trie' with linespoints, \
-     "compressed.dat" using 1:2 title 'Compressed trie' with linespoints
+     "compressed-v1.dat" using 1:2 title 'Compressed trie (v1)' with linespoints, \
+     "compressed.dat" using 1:2 title 'Compressed trie (current)' with linespoints
