@@ -109,15 +109,25 @@ func (result Items[T]) insert(subTrie *PTrie[T]) Items[T] {
 
 	item := subTrie.item
 
-	// perform an insertion sort. Fast enough for small k
-	for i := range result {
-		if result[i].Rank < item.Rank {
-			result[i], item = item, result[i]
-		}
-	}
+	// append the item, or set to last (least) element
 	if len(result) < cap(result) {
 		result = append(result, item)
+	} else {
+		result[len(result)-1] = item
 	}
+
+	// guard for indexing in loop, can skip if only 1 result so far
+	if len(result) > 1 {
+		// reverse bubble sort with early stop
+		for i := len(result)-2; i>=0; i-- {
+			if result[i].Rank < result[i+1].Rank {
+				result[i], result[i+1] = result[i+1], result[i]
+			} else {
+				break
+			}
+		}
+	}
+
 	return result
 }
 
