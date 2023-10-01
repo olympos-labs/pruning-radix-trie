@@ -27,6 +27,9 @@ func (pt *PTrie[T]) FindTopK(prefix string, k int) []Item[T] {
 	return pt.FindTopKFast(prefix, make([]Item[T], 0, k))
 }
 
+// FindTopKFast works like [PTrie.FindTopK], but is able to reuse an already
+// allocated result slice for the items. The slice will be filled up to its
+// capacity if there are enough elements that match the prefix.
 func (pt *PTrie[T]) FindTopKFast(prefix string, result []Item[T]) []Item[T] {
 	best := result[:0]
 
